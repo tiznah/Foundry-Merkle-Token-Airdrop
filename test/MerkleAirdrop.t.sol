@@ -50,6 +50,7 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
         uint256 endingBalance = token.balanceOf(user);
         assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM);
     }
+
     function testGasPayerCanClaimOnBehalfOfUser() public {
         uint256 startingBalance = token.balanceOf(user);
         bytes32 digest = airdrop.getMessage(user, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract
@@ -63,6 +64,7 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
         uint256 endingBalance = token.balanceOf(user);
         assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM);
     }
+
     function testUserCannotClaimAfterGasPayerClaimed() public {
         uint256 startingBalance = token.balanceOf(user);
         bytes32 digest = airdrop.getMessage(user, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract

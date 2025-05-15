@@ -90,3 +90,4 @@ This pattern is supported out-of-the-box by the contract and is tested in [`test
 > **Note:**  
 > The signature is only valid for the specific address and amount, and can only be used once. This prevents replay attacks and double claims.
 
+
