@@ -15,6 +15,8 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     address public user;
     uint256 public userPrivKey;
     address public gasPayer;
+    address public randomUser;
+    uint256 public randomUserPrivKey;
     uint256 public AMOUNT_TO_CLAIM = 25 ether;
     uint256 public AMOUNT_TO_MINT = AMOUNT_TO_CLAIM * 4;
     bytes32 public proofOne = 0x0fd7c981d39bece61f7499702bf59b3114a90e66b51ba2c53abdf7b62986c00a;
@@ -34,10 +36,21 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
             token.transfer(address(airdrop), AMOUNT_TO_MINT);
         }
         (user, userPrivKey) = makeAddrAndKey("user");
+        (randomUser, randomUserPrivKey) = makeAddrAndKey("randomUser");
         gasPayer = makeAddr("gasPayer");
     }
 
-    function testUserCanClaim() public {
+    function testUserCanClaimForSelf() public {
+        uint256 startingBalance = token.balanceOf(user);
+        bytes32 digest = airdrop.getMessage(user, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract
+        vm.startPrank(user); // prank the user to sign a message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest); // takes private key and returns v, r, s
+        vm.stopPrank();
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+        uint256 endingBalance = token.balanceOf(user);
+        assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM);
+    }
+    function testGasPayerCanClaimOnBehalfOfUser() public {
         uint256 startingBalance = token.balanceOf(user);
         bytes32 digest = airdrop.getMessage(user, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract
         vm.startPrank(user); // prank the user to sign a message
@@ -49,5 +62,36 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
         vm.stopPrank();
         uint256 endingBalance = token.balanceOf(user);
         assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM);
+    }
+    function testUserCannotClaimAfterGasPayerClaimed() public {
+        uint256 startingBalance = token.balanceOf(user);
+        bytes32 digest = airdrop.getMessage(user, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract
+        vm.startPrank(user); // prank the user to sign a message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(userPrivKey, digest); // takes private key and returns v, r, s
+        vm.stopPrank();
+
+        vm.startPrank(gasPayer); // now the gaspayer is claiming on behalf of the user
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+        vm.stopPrank();
+        vm.startPrank(user);
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__AlreadyClaimed.selector);
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+        vm.stopPrank();
+        uint256 endingBalance = token.balanceOf(user);
+        assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM);
+    }
+
+    function testRandomUserCannotClaim() public {
+        uint256 startingBalance = token.balanceOf(randomUser);
+        bytes32 digest = airdrop.getMessage(randomUser, AMOUNT_TO_CLAIM); // from the MerkleAirdrop contract
+        vm.startPrank(randomUser); // prank the user to sign a message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(randomUserPrivKey, digest); // takes private key and returns v, r, s
+        vm.stopPrank();
+        vm.startPrank(user);
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidProof.selector);
+        airdrop.claim(randomUser, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+        vm.stopPrank();
+        uint256 endingBalance = token.balanceOf(randomUser);
+        assertEq(endingBalance - startingBalance, 0);
     }
 }
