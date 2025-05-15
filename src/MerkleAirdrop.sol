@@ -5,6 +5,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 contract MerkleAirdrop is EIP712 {
     // some list of addresses and allow them to claim tokens
     address[] public claimers;
@@ -14,16 +15,18 @@ contract MerkleAirdrop is EIP712 {
 
     // EIP712
     bytes32 private constant MESSAGE_TYPEHASH = keccak256("AirdropClaim(address account,uint256 amount)");
+
     struct AirdropClaim {
         address account;
         uint256 amount;
-    }   
+    }
 
     using SafeERC20 for IERC20; // to avoid reverts from ERC20
 
     error MerkleAirdrop__InvalidProof();
     error MerkleAirdrop__AlreadyClaimed();
     error MerkleAirdrop__InvalidSignature();
+
     event Claimed(address indexed account, uint256 amount);
 
     constructor(address _bagleToken, bytes32 _merkleRoot) EIP712("MerkleAirdrop", "1") {
@@ -31,7 +34,9 @@ contract MerkleAirdrop is EIP712 {
         i_merkleRoot = _merkleRoot;
     }
 
-    function claim(address _account, uint256 _amount, bytes32[] calldata _merkleProof, uint8 v, bytes32 r, bytes32 s) external {
+    function claim(address _account, uint256 _amount, bytes32[] calldata _merkleProof, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
         require(!s_claimed[_account], MerkleAirdrop__AlreadyClaimed());
         // checking if the signature it valid if not revert
         // message is the digest
@@ -45,14 +50,21 @@ contract MerkleAirdrop is EIP712 {
         i_bagleToken.safeTransfer(_account, _amount);
     }
     // checks if the signature is valid
-    function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s) public pure returns (bool) {
+
+    function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s)
+        public
+        pure
+        returns (bool)
+    {
         // using Openzeppelin ecrecover
-        (address actualSigner,  , ) = ECDSA.tryRecover(digest, v, r, s);
+        (address actualSigner,,) = ECDSA.tryRecover(digest, v, r, s);
         return actualSigner == account;
     }
     // get the digest
+
     function getMessage(address account, uint256 amount) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(MESSAGE_TYPEHASH, AirdropClaim({account: account, amount: amount}))));
+        return
+            _hashTypedDataV4(keccak256(abi.encode(MESSAGE_TYPEHASH, AirdropClaim({account: account, amount: amount}))));
     }
 
     function getMerkleRoot() public view returns (bytes32) {

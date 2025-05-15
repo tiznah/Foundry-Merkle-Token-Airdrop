@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
@@ -16,11 +15,12 @@ contract DeployMerkleAirdrop is Script {
         BagleToken token = new BagleToken();
         MerkleAirdrop airdrop = new MerkleAirdrop(address(token), s_merkleRoot);
         token.mint(token.owner(), s_amountToTransfer);
-        IERC20(token).transfer(address(airdrop), s_amountToTransfer);   
+        IERC20(token).transfer(address(airdrop), s_amountToTransfer);
         vm.stopBroadcast();
         return (airdrop, token);
     }
+
     function run() external returns (MerkleAirdrop, BagleToken) {
-    return deployMerkleAirdrop();
+        return deployMerkleAirdrop();
     }
 }
