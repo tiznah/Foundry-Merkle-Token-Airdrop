@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Script} from "forge-std/src/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {MerkleAirdrop} from "../src/MerkleAirdrop.sol";
 import {BagleToken} from "../src/BagleToken.sol";
 import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
